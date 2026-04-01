@@ -1,0 +1,9 @@
+[package]
+name = "poseidon-can"
+description = "CAN bus driver abstraction for marine engine diagnostics"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+tracing = { workspace = true }

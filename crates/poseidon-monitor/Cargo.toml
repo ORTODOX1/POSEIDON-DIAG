@@ -1,0 +1,14 @@
+[package]
+name = "poseidon-monitor"
+description = "Real-time engine parameter aggregator with pub/sub distribution"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+poseidon-can = { path = "../poseidon-can" }
+poseidon-j1939 = { path = "../poseidon-j1939" }
+poseidon-nmea2k = { path = "../poseidon-nmea2k" }
+poseidon-dtc = { path = "../poseidon-dtc" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
