@@ -6,6 +6,7 @@ members = [
     "crates/poseidon-nmea2k",
     "crates/poseidon-dtc",
     "crates/poseidon-monitor",
+    "crates/poseidon-safety",
 ]
 
 [workspace.package]
@@ -32,6 +33,7 @@ poseidon-j1939 = { path = "crates/poseidon-j1939" }
 poseidon-nmea2k = { path = "crates/poseidon-nmea2k" }
 poseidon-dtc = { path = "crates/poseidon-dtc" }
 poseidon-monitor = { path = "crates/poseidon-monitor" }
+poseidon-safety = { path = "crates/poseidon-safety" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = "0.3"

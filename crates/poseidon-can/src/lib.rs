@@ -3,6 +3,8 @@
 //! Provides a unified interface over SocketCAN (Linux) and PCAN (Windows)
 //! hardware adapters commonly found in shipboard diagnostic equipment.
 
+pub mod socketcan;
+
 use std::time::Duration;
 use thiserror::Error;
 

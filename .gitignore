@@ -1,0 +1,31 @@
+# Compiled output
+/target/
+**/target/
+
+# Cargo.lock is checked in for binaries, ignored for libraries
+# Since this is a workspace with a binary, we keep it.
+# Uncomment the line below if this becomes a pure library workspace.
+# Cargo.lock
+
+# Debug symbols (Windows)
+*.pdb
+
+# Environment and secrets
+.env
+.env.*
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Coverage and profiling
+*.profraw
+lcov.info
+tarpaulin-report.html

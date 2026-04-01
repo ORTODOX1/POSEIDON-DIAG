@@ -1,0 +1,9 @@
+[package]
+name = "poseidon-safety"
+description = "Write protection, audit logging, and operational safeguards for marine ECU diagnostics"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+tracing = { workspace = true }
