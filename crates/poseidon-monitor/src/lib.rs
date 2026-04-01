@@ -113,12 +113,14 @@ impl Monitor {
     /// all active subscribers.
     pub async fn ingest(&self, reading: ParameterReading) -> Result<(), MonitorError> {
         self.snapshot.update(reading.clone()).await;
+        // Silently drop if no subscribers are listening — this is expected during startup and shutdown
         let _ = self.tx.send(MonitorEvent::ParameterUpdate(reading));
         Ok(())
     }
 
     /// Report a fault status change to all subscribers.
     pub fn report_fault(&self, spn: u32, fmi: u8, active: bool) {
+        // Silently drop if no subscribers are listening — this is expected during startup and shutdown
         let _ = self.tx.send(MonitorEvent::FaultChange { spn, fmi, active });
     }
 }
