@@ -7,7 +7,7 @@
 use poseidon_can::CanFrame;
 use thiserror::Error;
 
-/// Well-known PGNs for marine diesel engine diagnostics.
+/// Well-known PGN constants for marine diesel engine diagnostics.
 pub mod pgn {
     /// Electronic Engine Controller 1 — RPM, torque, demand.
     pub const ENGINE_CONTROLLER_1: u32 = 61444;
@@ -20,6 +20,10 @@ pub mod pgn {
     /// DM2 — Previously Active DTCs.
     pub const DM2_PREVIOUS_DTC: u32 = 65227;
 }
+
+/// Extended PGN registry with metadata (data length, transmission rate).
+#[path = "pgn.rs"]
+pub mod pgn_registry;
 
 /// Errors raised during J1939 message decoding.
 #[derive(Debug, Error)]
