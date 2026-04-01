@@ -1,0 +1,10 @@
+[package]
+name = "poseidon-nmea2k"
+description = "NMEA 2000 PGN decoder for marine engine and environmental parameters"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+poseidon-can = { path = "../poseidon-can" }
+thiserror = { workspace = true }
+tracing = { workspace = true }

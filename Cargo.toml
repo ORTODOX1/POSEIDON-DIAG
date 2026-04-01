@@ -1,0 +1,37 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/poseidon-can",
+    "crates/poseidon-j1939",
+    "crates/poseidon-nmea2k",
+    "crates/poseidon-dtc",
+    "crates/poseidon-monitor",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Poseidon Maritime Diagnostics <eng@poseidon-diag.io>"]
+repository = "https://github.com/poseidon-maritime/POSEIDON-DIAG"
+
+[workspace.dependencies]
+thiserror = "1.0"
+tracing = "0.1"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+
+[package]
+name = "poseidon-diag"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+poseidon-can = { path = "crates/poseidon-can" }
+poseidon-j1939 = { path = "crates/poseidon-j1939" }
+poseidon-nmea2k = { path = "crates/poseidon-nmea2k" }
+poseidon-dtc = { path = "crates/poseidon-dtc" }
+poseidon-monitor = { path = "crates/poseidon-monitor" }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = "0.3"

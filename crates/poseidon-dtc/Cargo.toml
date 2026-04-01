@@ -1,0 +1,10 @@
+[package]
+name = "poseidon-dtc"
+description = "Diagnostic Trouble Code decoder — J1939 DM1/DM2, SPN/FMI lookup"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+poseidon-can = { path = "../poseidon-can" }
+thiserror = { workspace = true }
+tracing = { workspace = true }

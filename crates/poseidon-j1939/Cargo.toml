@@ -1,0 +1,10 @@
+[package]
+name = "poseidon-j1939"
+description = "J1939-76 Marine protocol stack — PGN parsing, SPN extraction"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+poseidon-can = { path = "../poseidon-can" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
