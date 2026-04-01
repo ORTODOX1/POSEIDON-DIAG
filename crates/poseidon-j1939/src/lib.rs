@@ -75,10 +75,11 @@ pub struct EngineFluid {
 
 /// Decode PGN 61444 — Electronic Engine Controller 1.
 ///
-/// Byte layout per SAE J1939-71:
-///   Byte 3-4: Engine Speed (0.125 RPM/bit, 0 offset)
-///   Byte 1:   Actual Engine Torque (1%/bit, -125% offset)
-///   Byte 2:   Driver Demand Torque (1%/bit, -125% offset)
+/// Byte layout per SAE J1939-71 (EEC1):
+///   Byte 1   (data[0]): Engine Torque Mode
+///   Byte 2   (data[1]): Driver's Demand Engine Torque (1%/bit, -125% offset)
+///   Byte 3   (data[2]): Actual Engine Torque (1%/bit, -125% offset)
+///   Byte 4-5 (data[3-4]): Engine Speed (0.125 RPM/bit, 0 offset)
 pub fn decode_engine_controller(frame: &CanFrame, sa: u8) -> Result<EngineController, J1939Error> {
     if frame.data.len() < 8 {
         return Err(J1939Error::FrameTooShort { expected: 8, actual: frame.data.len() });
@@ -91,7 +92,12 @@ pub fn decode_engine_controller(frame: &CanFrame, sa: u8) -> Result<EngineContro
     Ok(EngineController { source_address: sa, engine_rpm, actual_torque_pct, demand_torque_pct })
 }
 
-/// Decode PGN 65262 — Engine Temperature 1.
+/// Decode PGN 65262 — Engine Temperature 1 (ET1).
+///
+/// Byte layout per SAE J1939-71:
+///   Byte 1   (data[0]): Engine Coolant Temperature (1°C/bit, -40°C offset)
+///   Byte 2   (data[1]): Fuel Temperature (1°C/bit, -40°C offset)
+///   Byte 3-4 (data[2-3]): Engine Oil Temperature (0.03125°C/bit, -273°C offset)
 pub fn decode_engine_temperature(frame: &CanFrame, sa: u8) -> Result<EngineTemperature, J1939Error> {
     if frame.data.len() < 8 {
         return Err(J1939Error::FrameTooShort { expected: 8, actual: frame.data.len() });
