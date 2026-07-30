@@ -9,7 +9,7 @@ Built for engineers who maintain ship power plants.
 
 ---
 
-[![Research Preview](https://img.shields.io/badge/status-research_preview-orange?style=flat-square)](https://github.com/ORTODOX1/POSEIDON-DIAG)
+[![Research Preview](https://img.shields.io/badge/status-research_preview-orange?style=flat-square)](https://github.com/hermandoronin/POSEIDON-DIAG)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.78%2B-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -22,7 +22,7 @@ Built for engineers who maintain ship power plants.
 
 ## Overview
 
-**POSEIDON-DIAG** is a maritime adaptation of the [DAEDALUS](https://github.com/ORTODOX1/DAEDALUS) ECU diagnostic platform. Where DAEDALUS targets heavy-duty truck ECU tuning, POSEIDON-DIAG is purpose-built for **marine diesel engine diagnostics** -- covering two-stroke and four-stroke engines from MAN B&W, Wartsila, Caterpillar Marine, Rolls-Royce/mtu, and others.
+**POSEIDON-DIAG** is a maritime adaptation of the [DAEDALUS](https://github.com/hermandoronin/DAEDALUS) ECU diagnostic platform. Where DAEDALUS targets heavy-duty truck ECU tuning, POSEIDON-DIAG is purpose-built for **marine diesel engine diagnostics** -- covering two-stroke and four-stroke engines from MAN B&W, Wartsila, Caterpillar Marine, Rolls-Royce/mtu, and others.
 
 The platform communicates over **J1939-76 Marine CAN** and **NMEA 2000** networks, providing real-time parameter monitoring, fault code diagnostics, condition-based maintenance alerting, and AI-assisted anomaly detection. It is designed for use by chief engineers, marine service technicians, and classification society surveyors.
 
@@ -229,7 +229,7 @@ Marine engine diagnostics carry inherent risks. The following mechanisms are bui
 
 ```bash
 # Clone the repository
-git clone https://github.com/ORTODOX1/POSEIDON-DIAG.git
+git clone https://github.com/hermandoronin/POSEIDON-DIAG.git
 cd POSEIDON-DIAG
 
 # Build Rust backend
@@ -303,7 +303,7 @@ alarm_high = 28000
 
 ## Related Projects
 
-- **[DAEDALUS](https://github.com/ORTODOX1/DAEDALUS)** -- The original ECU diagnostic platform for heavy-duty trucks. POSEIDON-DIAG shares its architectural philosophy but is rebuilt from the ground up for maritime protocol requirements.
+- **[DAEDALUS](https://github.com/hermandoronin/DAEDALUS)** -- The original ECU diagnostic platform for heavy-duty trucks. POSEIDON-DIAG shares its architectural philosophy but is rebuilt from the ground up for maritime protocol requirements.
 
 ---
 
