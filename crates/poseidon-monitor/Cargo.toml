@@ -3,6 +3,9 @@ name = "poseidon-monitor"
 description = "Real-time engine parameter aggregator with pub/sub distribution"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 
 [dependencies]
 poseidon-can = { path = "../poseidon-can" }

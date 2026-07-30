@@ -13,8 +13,8 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-authors = ["Poseidon Maritime Diagnostics <eng@poseidon-diag.io>"]
-repository = "https://github.com/poseidon-maritime/POSEIDON-DIAG"
+authors = ["Herman Doronin <herherman030303@gmail.com>"]
+repository = "https://github.com/hermandoronin/POSEIDON-DIAG"
 
 [workspace.dependencies]
 thiserror = "1.0"
@@ -24,8 +24,12 @@ serde = { version = "1", features = ["derive"] }
 
 [package]
 name = "poseidon-diag"
+description = "Marine engine diagnostics workspace binary — J1939 and NMEA 2000 over CAN"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
 
 [dependencies]
 poseidon-can = { path = "crates/poseidon-can" }
