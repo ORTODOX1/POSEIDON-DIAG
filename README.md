@@ -4,17 +4,16 @@
 
 ### Maritime Engine Diagnostics Platform
 
-Open-source diagnostic and condition monitoring platform for marine diesel engines.
-Built for engineers who maintain ship power plants.
+Rust workspace for decoding marine diesel engine data off J1939 and NMEA 2000
+CAN networks. Written by a marine engineer, for engine-room diagnostics work.
 
 ---
 
 [![Research Preview](https://img.shields.io/badge/status-research_preview-orange?style=flat-square)](https://github.com/hermandoronin/POSEIDON-DIAG)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-1.78%2B-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Rust](https://img.shields.io/badge/rust-2021_edition-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![NMEA 2000](https://img.shields.io/badge/NMEA_2000-CAN_2.0B-005f87?style=flat-square)](https://www.nmea.org/)
-[![J1939-76 Marine](https://img.shields.io/badge/SAE_J1939--76-Marine-1a1a2e?style=flat-square)](https://www.sae.org/standards/content/j1939/76_202407/)
+[![SAE J1939](https://img.shields.io/badge/SAE_J1939-CAN_2.0B-1a1a2e?style=flat-square)](https://www.sae.org/standards/content/j1939_202208/)
 
 </div>
 
@@ -22,102 +21,115 @@ Built for engineers who maintain ship power plants.
 
 ## Overview
 
-**POSEIDON-DIAG** is a maritime adaptation of the [DAEDALUS](https://github.com/hermandoronin/DAEDALUS) ECU diagnostic platform. Where DAEDALUS targets heavy-duty truck ECU tuning, POSEIDON-DIAG is purpose-built for **marine diesel engine diagnostics** -- covering two-stroke and four-stroke engines from MAN B&W, Wartsila, Caterpillar Marine, Rolls-Royce/mtu, and others.
+**POSEIDON-DIAG** is a set of Rust crates for reading and decoding marine diesel
+engine telemetry from J1939 and NMEA 2000 CAN networks. The intended users are
+chief engineers, marine service technicians, and anyone who needs to see what an
+engine ECU is actually reporting.
 
-The platform communicates over **J1939-76 Marine CAN** and **NMEA 2000** networks, providing real-time parameter monitoring, fault code diagnostics, condition-based maintenance alerting, and AI-assisted anomaly detection. It is designed for use by chief engineers, marine service technicians, and classification society surveyors.
-
-> **Research Preview** -- This project is under active development. Protocol implementations are validated against laboratory test benches. Deployment on operational vessels requires independent verification against applicable class society rules.
-
----
-
-## Core Capabilities
-
-### Marine ECU Communication
-- **J1939-76 Marine CAN** read/write at 250 kbps with full PGN support
-- Bidirectional parameter access for engine control units
-- Safe write operations with configurable confirmation gates and rollback
-- Multi-node addressing for engines, gearboxes, and auxiliary systems
-
-### NMEA 2000 Integration
-- Full decode of engine-related PGN groups (PGN 127488 -- Engine Parameters Rapid Update, PGN 127489 -- Engine Parameters Dynamic, PGN 127493 -- Transmission Parameters)
-- Fuel system monitoring (PGN 127497 -- Trip Fuel Consumption)
-- Cross-referencing with navigation data (speed over ground, heading, GPS position)
-
-### Live Parameter Monitoring
-- Engine RPM, exhaust gas temperature (per cylinder), fuel rack position
-- Turbocharger boost pressure and speed
-- Lube oil pressure and temperature
-- Cooling water inlet/outlet temperatures
-- Fuel pressure (common rail and injector-level where available)
-- Scavenge air pressure and temperature
-- Configurable alarm thresholds and watchdog triggers
-
-### DTC Diagnostics
-- J1939 SPN/FMI fault code decoding with marine-specific code tables
-- Active and stored DTC enumeration
-- Freeze-frame data capture at fault occurrence
-- Cross-reference with OEM service bulletins (MAN CEAS, Wartsila UNIC, CAT ET)
-- Exportable fault history in PDF and CSV formats
-
-### Condition-Based Maintenance
-- Trend analysis on critical parameters (cylinder pressure deviation, exhaust spread, bearing temperatures)
-- Automated maintenance interval tracking against running hours
-- Alert generation when parameters drift outside class-approved operating envelopes
-- Integration with planned maintenance systems via REST API
-
-### AI-Powered Anomaly Detection
-- Integration with Claude and GPT models for pattern recognition in engine telemetry
-- Deviation scoring against baseline engine performance profiles
-- Natural language diagnostic summaries for watch engineers
-- Configurable inference pipeline (local models or API-based)
-
-### 3D Map Visualization
-- Three.js-based 3D surface rendering of engine parameter maps (fuel injection timing, boost pressure, exhaust temperature)
-- Interactive rotation, zoom, and cross-section views
-- Side-by-side comparison of current vs. reference maps
-- Export to STL for report generation
-
-### Historical Trend Analysis
-- Time-series storage with configurable retention (SQLite local, InfluxDB remote)
-- Per-cylinder trend overlays for exhaust temperature balancing
-- Performance degradation tracking across overhaul cycles
-- Voyage-based segmentation for fuel efficiency reporting
+> **Research Preview** — This is an early-stage codebase. It is a protocol
+> decoding library plus a skeleton binary, not a finished diagnostic product.
+> **The SocketCAN driver is currently a stub**: it does not open a real socket
+> and never returns frames. Everything below describes what is in the repository
+> today; planned work is listed separately under
+> [Not implemented yet](#not-implemented-yet).
 
 ---
 
-## Supported Marine Engines
+## What is implemented
 
-| Manufacturer | Series | Type | Notes |
-|---|---|---|---|
-| **MAN Energy Solutions** | ME-C, ME-GI, ME-B | Two-stroke | Electronic control via MAN CEAS interface |
-| **Wartsila** | W31, W46F, RT-flex | Four-stroke / Two-stroke | UNIC control system integration |
-| **Caterpillar Marine** | C32, 3516E | Four-stroke | CAT J1939 dialect support |
-| **Rolls-Royce / mtu** | Series 4000 | Four-stroke | MDEC / ADEC electronic governors |
-| **Yanmar** | 6EY, 6AYM series | Four-stroke | Standard J1939 interface |
-| **Volvo Penta** | D13, IPS series | Four-stroke | EVC/NMEA 2000 gateway |
+### `poseidon-can` — CAN abstraction
 
-> Engine support is defined by protocol compatibility. Additional engines can be added by providing the PGN/SPN mapping tables for the target ECU.
+- `CanFrame` / `CanError` types and a `CanDriver` trait for pluggable backends
+- `parse_extended_id` — decodes the 29-bit extended identifier into
+  `(priority, PGN, source address)` per SAE J1939-21, handling PDU1 vs PDU2 and
+  the EDP/DP bits, so PGNs above `0xFFFF` (e.g. NMEA 2000 127488 = `0x1F200`)
+  decode correctly
+- `SocketCanDriver` — a **stub** implementation. The structure and call sequence
+  are in place; the actual `socket(PF_CAN, ...)` / `bind` / `read` syscalls are
+  not wired up, so `recv` always returns `None`.
+
+### `poseidon-j1939` — J1939 decoding
+
+Decoders, with the byte layout documented in the source against SAE J1939-71:
+
+| PGN | Name | Decoded fields |
+|---|---|---|
+| 61444 | Electronic Engine Controller 1 | engine speed, actual torque %, demand torque % |
+| 65262 | Engine Temperature 1 | coolant temp, fuel temp, oil temp |
+| 65263 | Engine Fluid Level/Pressure 1 | fuel delivery pressure, oil pressure, coolant pressure |
+
+Plus a PGN registry (`pgn_registry::default_registry`) carrying name, payload
+length, and typical transmission rate for 12 PGNs, including the marine groups
+65028 / 65030 / 65031. **The registry is metadata only** — entries without a
+decoder above are not parsed into typed values.
+
+### `poseidon-nmea2k` — NMEA 2000 decoding
+
+| PGN | Name | Decoded fields |
+|---|---|---|
+| 127488 | Engine Parameters, Rapid Update | engine instance, RPM, boost pressure, tilt/trim |
+| 130312 | Temperature | SID, instance, source, actual temperature, set temperature |
+
+An `EngineDynamic` type for PGN 127489 is declared but has no decoder yet.
+
+### `poseidon-dtc` — fault codes
+
+- `decode_dm_message` — parses DM1 (active) and DM2 (previously active) payloads
+  into SPN / FMI / occurrence count
+- FMI descriptions per SAE J1939-73
+- `Severity` classification (Info / Caution / Warning / Critical) for a small set
+  of high-criticality SPNs (oil pressure, coolant temperature, overspeed)
+
+### `poseidon-monitor` — live parameter aggregation
+
+- `EngineSnapshot` — async `RwLock` map of the latest reading per parameter key
+- `Monitor` — ingests readings and fans events out to subscribers over a Tokio
+  broadcast channel
+
+### `poseidon-safety` — write safeguards
+
+These are the guard rails for a future write path. **No ECU write path exists
+yet**, so nothing currently calls them in anger:
+
+- `WriteGuard` — two-stage confirmation plus a global write lock
+- `ParameterBounds` — min/max validation of a proposed value per parameter address
+- `DeadManSwitch` — expires unless the operator acknowledges within a timeout
+- `AuditLog` — append-only record of parameter modifications, held **in memory**
+  (no file persistence yet)
 
 ---
 
-## Protocol Support
+## Architecture
 
-| Protocol | Standard | Transport | Use Case |
-|---|---|---|---|
-| **J1939-76 Marine** | SAE J1939-76 | CAN 2.0B, 250 kbps | Primary engine ECU communication |
-| **NMEA 2000** | IEC 61162-3 | CAN 2.0B + marine application layer | Engine data, navigation, fuel systems |
-| **Modbus RTU/TCP** | IEC 61158 | RS-485 / Ethernet | Auxiliary systems (pumps, separators, alarm panels) |
-| **OPC UA** | IEC 62541 | TCP/IP | Shore-side fleet management integration |
-| **IEC 61162-1/2** | IEC 61162 | RS-422 serial | Legacy navigation instrument data (GPS, gyro, AIS) |
+```
+POSEIDON-DIAG/
+|
+|-- Cargo.toml                     # workspace manifest (6 crates + binary)
+|-- Cargo.lock
+|
+|-- src/
+|   `-- main.rs                    # binary: starts the monitor, logs events
+|
+|-- crates/
+|   |-- poseidon-can/              # frame types, driver trait, 29-bit ID parsing
+|   |   `-- src/socketcan.rs       #   SocketCAN backend (stub)
+|   |-- poseidon-j1939/            # J1939 decoders
+|   |   `-- src/pgn.rs             #   PGN metadata registry
+|   |-- poseidon-nmea2k/           # NMEA 2000 decoders
+|   |-- poseidon-dtc/              # DM1/DM2, SPN/FMI, severity
+|   |-- poseidon-monitor/          # parameter snapshot + pub/sub
+|   `-- poseidon-safety/           # write gates, bounds, dead-man switch, audit log
+|
+|-- examples/
+|   `-- read_engine.rs             # end-to-end wiring demo
+|
+`-- .github/workflows/ci.yml       # build, test, clippy, rustfmt
+```
 
-### Hardware Interface
-
-Recommended CAN adapters for onboard use:
-
-- **PEAK PCAN-USB Pro FD** -- dual-channel, rugged housing
-- **Kvaser Leaf Light HS v2** -- lightweight, single channel
-- **Actisense NGW-1** -- NMEA 2000 gateway with galvanic isolation
-- **SocketCAN-compatible** Linux adapters for embedded installations
+Each crate has one responsibility. `poseidon-can` is hardware-agnostic; the
+protocol crates consume raw frames and produce typed values; `poseidon-monitor`
+holds state and distributes updates; `poseidon-safety` is independent of the
+transport entirely.
 
 ---
 
@@ -125,92 +137,13 @@ Recommended CAN adapters for onboard use:
 
 | Layer | Technology |
 |---|---|
-| **Core engine** | Rust 1.78+ (CAN drivers, protocol parsers, safety-critical logic) |
-| **Desktop shell** | Tauri 2.x (lightweight, cross-platform) |
-| **Frontend** | React 19, TypeScript 5.x |
-| **Visualization** | Three.js (3D maps), Recharts (time-series) |
-| **CAN interface** | SocketCAN (Linux), PCAN-Basic (Windows) |
-| **AI integration** | Python 3.12+ (inference service), Claude API, OpenAI API |
-| **Database** | SQLite (local), InfluxDB (time-series), PostgreSQL (fleet) |
-| **Communication** | WebSocket (frontend-backend), gRPC (inter-service) |
+| **Language** | Rust, 2021 edition |
+| **Async runtime** | Tokio (`poseidon-monitor`, binary) |
+| **Errors** | `thiserror` |
+| **Logging** | `tracing` / `tracing-subscriber` |
+| **CAN backend** | SocketCAN (Linux) — interface defined, implementation stubbed |
 
----
-
-## Architecture
-
-```
-poseidon-diag/
-|
-|-- crates/
-|   |-- poseidon-can/          # CAN bus driver abstraction (SocketCAN, PCAN)
-|   |-- poseidon-j1939/        # J1939-76 Marine protocol stack
-|   |-- poseidon-nmea2k/       # NMEA 2000 PGN encoder/decoder
-|   |-- poseidon-modbus/       # Modbus RTU/TCP client
-|   |-- poseidon-dtc/          # DTC decoder with SPN/FMI tables
-|   |-- poseidon-monitor/      # Real-time parameter aggregation
-|   |-- poseidon-cbm/          # Condition-based maintenance engine
-|   |-- poseidon-storage/      # Time-series persistence layer
-|   |-- poseidon-opcua/        # OPC UA client for shore integration
-|   `-- poseidon-safety/       # Write confirmation gates, watchdogs
-|
-|-- services/
-|   |-- ai-inference/          # Python anomaly detection service
-|   `-- fleet-sync/            # Shore-to-ship data synchronization
-|
-|-- src-tauri/                 # Tauri application entry point
-|-- src/                       # React frontend
-|   |-- components/
-|   |   |-- dashboard/         # Main engine overview panels
-|   |   |-- dtc/               # Fault code browser
-|   |   |-- maps/              # 3D parameter map viewer
-|   |   |-- trends/            # Historical trend charts
-|   |   `-- shared/            # Reusable UI components
-|   |-- hooks/                 # WebSocket and data hooks
-|   `-- stores/                # State management
-|
-|-- proto/                     # gRPC service definitions
-|-- config/                    # Engine profile configurations
-`-- docs/                      # Technical documentation
-```
-
-Each Rust crate follows the single-responsibility principle. The CAN driver crate provides a hardware-agnostic interface; protocol crates (J1939, NMEA 2000, Modbus) consume raw frames and produce typed messages; higher-level crates handle monitoring logic and storage. No crate exceeds its bounded context.
-
----
-
-## SOLAS/IMO Compliance Notes
-
-This platform is intended as an **engineering diagnostic tool**, not as a certified safety system. The following regulatory context applies:
-
-- **SOLAS Chapter II-1, Regulation 26** -- Steering gear: POSEIDON-DIAG does not interface with or monitor steering gear systems.
-- **SOLAS Chapter II-2** -- Fire safety: The platform can monitor exhaust gas temperatures and generate alerts, but it is not a substitute for certified fire detection systems.
-- **IMO MSC.1/Circ.1512** -- Guidelines on software quality assurance: The write-confirmation safety gates in `poseidon-safety` are designed with this circular in mind, but the software has not undergone formal type approval.
-- **IACS UR E22** -- On-board use of computer-based systems: Operators deploying this tool should ensure it does not interfere with type-approved automation systems.
-- **ISM Code** -- Any use of POSEIDON-DIAG should be documented in the vessel Safety Management System as an auxiliary diagnostic tool.
-
-> **Disclaimer**: POSEIDON-DIAG is not type-approved by any classification society. It must not be used as a sole basis for safety-critical decisions. Always cross-reference with certified instrumentation.
-
----
-
-## Maritime Safety Mechanisms
-
-Marine engine diagnostics carry inherent risks. The following mechanisms are built into the platform:
-
-### Write Protection
-- All ECU write operations require a two-stage confirmation (software gate + physical hardware interlock recommendation)
-- Write commands are logged with timestamp, operator ID, parameter address, old value, and new value
-- A configurable write-lockout mode disables all write operations, limiting the tool to read-only diagnostics
-- Automatic write abort if CAN bus error rate exceeds configurable threshold
-
-### Operational Safeguards
-- **Dead man switch** -- Active monitoring sessions require periodic operator acknowledgment; sessions auto-pause after configurable timeout
-- **Parameter boundary enforcement** -- Write values are validated against OEM-defined min/max ranges before transmission
-- **CAN bus isolation** -- Recommended deployment behind a CAN gateway with hardware-level write filtering for critical engine networks
-- **Audit trail** -- All diagnostic actions are logged to an append-only local file, exportable for ISM Code documentation
-
-### Network Considerations
-- The platform is designed for **air-gapped or isolated network** deployment
-- AI inference can operate with locally deployed models when satellite connectivity is unavailable
-- Fleet synchronization uses store-and-forward with integrity verification
+There is no frontend, no database, and no external service in this repository.
 
 ---
 
@@ -218,92 +151,122 @@ Marine engine diagnostics carry inherent risks. The following mechanisms are bui
 
 ### Prerequisites
 
-- Rust 1.78 or later
-- Node.js 20 LTS
-- Python 3.12+ (for AI inference service)
-- A supported CAN adapter connected to the J1939/NMEA 2000 network
-- Linux: SocketCAN kernel module loaded (`sudo modprobe can`, `sudo modprobe vcan` for testing)
-- Windows: PCAN-Basic driver installed
+- A stable Rust toolchain (install via [rustup](https://rustup.rs/))
 
-### Build
+That is the whole list. No CAN hardware is needed to build, test, or run the
+example, because the driver is stubbed.
+
+### Build and test
 
 ```bash
-# Clone the repository
 git clone https://github.com/hermandoronin/POSEIDON-DIAG.git
 cd POSEIDON-DIAG
 
-# Build Rust backend
-cargo build --release
-
-# Install frontend dependencies
-npm install
-
-# Start the Tauri application
-cargo tauri dev
+cargo build --workspace
+cargo test --workspace
 ```
 
-### Virtual CAN Testing (Linux)
+### Run the example
+
+Shows how the CAN, J1939, and monitor crates fit together. The driver returns no
+frames, so it falls back to two simulated readings:
 
 ```bash
-# Create a virtual CAN interface for development
-sudo ip link add dev vcan0 type vcan
-sudo ip link set up vcan0
+cargo run --example read_engine
+```
 
-# Run with virtual CAN
-POSEIDON_CAN_INTERFACE=vcan0 cargo tauri dev
+Override the interface name it tries to open with `POSEIDON_CAN_INTERFACE`:
+
+```bash
+POSEIDON_CAN_INTERFACE=can0 cargo run --example read_engine
+```
+
+### Run the binary
+
+Starts the Tokio runtime and the monitor, emits one placeholder reading, then
+waits for Ctrl-C:
+
+```bash
+cargo run
 ```
 
 ---
 
-## Configuration
+## Not implemented yet
 
-Engine profiles are stored in `config/engines/` as TOML files:
+Everything in this section is a plan, not a feature. None of it is in the code.
 
-```toml
-[engine]
-manufacturer = "MAN Energy Solutions"
-model = "6S50ME-C9.7"
-type = "two-stroke"
-cylinders = 6
-rated_rpm = 127
-rated_power_kw = 8900
+**Transport and hardware**
 
-[protocol]
-bus = "j1939-76"
-bitrate = 250000
-source_address = 0x00
+- Real SocketCAN I/O (raw socket, `SIOCGIFINDEX`, bind, read/write)
+- PCAN backend for Windows — the `CanBackend::Pcan` enum variant exists, the
+  driver does not
+- Multi-packet transport (J1939-21 TP.CM / TP.DT) for payloads over 8 bytes
+- Modbus RTU/TCP for auxiliary systems
+- OPC UA client for shore-side integration
+- IEC 61162-1/2 serial navigation instrument data
 
-[parameters.exhaust_temp]
-spn = 171
-unit = "degC"
-alarm_high = 450
-alarm_critical = 500
+**Decoding**
 
-[parameters.turbo_speed]
-spn = 103
-unit = "rpm"
-alarm_high = 28000
-```
+- NMEA 2000 PGN 127489 (Engine Parameters, Dynamic) and 127493, 127497
+- Decoders for the marine J1939 PGNs currently present in the registry as
+  metadata only
+- Freeze-frame capture at fault occurrence
+- Engine-specific profiles (per-manufacturer PGN/SPN mapping tables)
 
----
+**Application**
 
-## Roadmap
-
-| Phase | Target | Scope |
-|---|---|---|
-| **0.1** | Q3 2026 | J1939-76 read-only communication, basic parameter dashboard |
-| **0.2** | Q4 2026 | NMEA 2000 PGN decoding, DTC browser, SQLite storage |
-| **0.3** | Q1 2027 | 3D map visualization, historical trend analysis |
-| **0.4** | Q2 2027 | AI anomaly detection, condition-based maintenance alerts |
-| **0.5** | Q3 2027 | Write operations with safety gates, Modbus integration |
-| **0.6** | Q4 2027 | OPC UA shore integration, fleet synchronization |
-| **1.0** | 2028 | Stable release, extended engine profile library |
+- Any user interface
+- ECU write operations — the `poseidon-safety` gates exist, the write path does not
+- Persistence of the audit log and of time-series history
+- Export of fault history to PDF or CSV
+- Trend analysis and condition-based maintenance alerting
+- 3D parameter map visualisation
+- AI-assisted anomaly detection
 
 ---
 
-## Related Projects
+## SOLAS/IMO Compliance Notes
 
-- **[DAEDALUS](https://github.com/hermandoronin/DAEDALUS)** -- The original ECU diagnostic platform for heavy-duty trucks. POSEIDON-DIAG shares its architectural philosophy but is rebuilt from the ground up for maritime protocol requirements.
+This platform is intended as an **engineering diagnostic tool**, not as a
+certified safety system. The following regulatory context applies:
+
+- **SOLAS Chapter II-1, Regulation 26** — Steering gear: POSEIDON-DIAG does not
+  interface with or monitor steering gear systems.
+- **SOLAS Chapter II-2** — Fire safety: the platform can decode exhaust and
+  coolant temperatures, but it is not a substitute for certified fire detection
+  systems.
+- **IMO MSC.1/Circ.1512** — Guidelines on software quality assurance: the
+  write-confirmation gates in `poseidon-safety` are designed with this circular
+  in mind, but the software has not undergone formal type approval.
+- **IACS UR E22** — On-board use of computer-based systems: operators deploying
+  this tool should ensure it does not interfere with type-approved automation
+  systems.
+- **ISM Code** — Any use of POSEIDON-DIAG should be documented in the vessel
+  Safety Management System as an auxiliary diagnostic tool.
+
+> **Disclaimer**: POSEIDON-DIAG is not type-approved by any classification
+> society. It must not be used as a sole basis for safety-critical decisions.
+> Always cross-reference with certified instrumentation.
+
+---
+
+## Design intent for write operations
+
+Marine engine diagnostics carry inherent risk, so the safety layer was written
+before the write path. The intended model, as encoded in `poseidon-safety`:
+
+- A write requires **two independent confirmations**; a global lock can disable
+  writes outright, reducing the tool to read-only diagnostics.
+- Proposed values are validated against registered min/max bounds before any
+  transmission.
+- An active session requires periodic operator acknowledgement; the dead-man
+  switch expires otherwise.
+- Every modification is recorded with operator, address, old value, and new value.
+
+Deployment guidance that the code cannot enforce: run behind a CAN gateway with
+hardware-level write filtering on critical engine networks, and treat an isolated
+network as the default.
 
 ---
 
@@ -311,13 +274,16 @@ alarm_high = 28000
 
 Contributions are welcome. Before submitting a pull request:
 
-1. Ensure all Rust crates compile with `cargo build --release`
-2. Run `cargo clippy` with no warnings
-3. Run `cargo test` across all crates
-4. Frontend changes must pass `npm run lint` and `npm run build`
-5. Include engine profile TOML files for any new engine support
+1. `cargo build --workspace` succeeds
+2. `cargo test --workspace` passes
+3. `cargo clippy --workspace -- -D warnings` is clean
+4. `cargo fmt --all -- --check` is clean
 
-For protocol-level contributions (new PGN definitions, SPN mappings), please include a reference to the relevant SAE, IEC, or OEM documentation.
+CI runs exactly these four steps.
+
+For protocol-level contributions (new PGN definitions, SPN mappings), please
+include a reference to the relevant SAE, IEC, or OEM documentation, and document
+the byte layout in a doc comment on the decoder as the existing ones do.
 
 ---
 
@@ -329,7 +295,12 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 ## About the Author
 
-Marine engineer with 3+ years of experience operating and maintaining ship power plants, including medium-speed and slow-speed diesel engines, auxiliary machinery, and integrated automation systems. Background in both engine room watchkeeping and planned maintenance management. This project bridges the gap between hands-on marine engineering practice and modern diagnostic software tooling.
+Marine engineer with 3+ years of experience operating and maintaining ship power
+plants, including medium-speed and slow-speed diesel engines, auxiliary
+machinery, and integrated automation systems. Background in both engine room
+watchkeeping and planned maintenance management. This project bridges the gap
+between hands-on marine engineering practice and modern diagnostic software
+tooling.
 
 ---
 
