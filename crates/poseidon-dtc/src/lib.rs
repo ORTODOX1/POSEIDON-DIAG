@@ -86,13 +86,13 @@ pub struct DmMessage {
 /// Warning or Critical; sensor faults map to Caution.
 fn classify_severity(spn: u32, fmi: &Fmi) -> Severity {
     match (spn, fmi.0) {
-        (100, 1) => Severity::Critical,   // oil pressure low — most severe
-        (100, _) => Severity::Warning,     // oil pressure any other fault
-        (110, 0) => Severity::Critical,    // coolant temp high — most severe
+        (100, 1) => Severity::Critical, // oil pressure low — most severe
+        (100, _) => Severity::Warning,  // oil pressure any other fault
+        (110, 0) => Severity::Critical, // coolant temp high — most severe
         (110, _) => Severity::Warning,
-        (190, 0) => Severity::Critical,    // engine overspeed
-        (_, 2)   => Severity::Caution,     // erratic data — sensor issue
-        (_, 3..=6) => Severity::Caution,   // wiring faults
+        (190, 0) => Severity::Critical,  // engine overspeed
+        (_, 2) => Severity::Caution,     // erratic data — sensor issue
+        (_, 3..=6) => Severity::Caution, // wiring faults
         _ => Severity::Info,
     }
 }
@@ -104,7 +104,10 @@ fn classify_severity(spn: u32, fmi: &Fmi) -> Severity {
 pub fn decode_dm_message(frame: &CanFrame, sa: u8) -> Result<DmMessage, DtcError> {
     let d = &frame.data;
     if d.len() < 6 {
-        return Err(DtcError::PayloadTooShort { expected: 6, actual: d.len() });
+        return Err(DtcError::PayloadTooShort {
+            expected: 6,
+            actual: d.len(),
+        });
     }
 
     let mil_active = (d[0] & 0xC0) == 0x40;
@@ -118,9 +121,7 @@ pub fn decode_dm_message(frame: &CanFrame, sa: u8) -> Result<DmMessage, DtcError
         if chunk.len() < 4 {
             break;
         }
-        let spn = ((chunk[2] as u32 & 0xE0) << 11)
-            | ((chunk[1] as u32) << 8)
-            | (chunk[0] as u32);
+        let spn = ((chunk[2] as u32 & 0xE0) << 11) | ((chunk[1] as u32) << 8) | (chunk[0] as u32);
         let fmi = Fmi(chunk[2] & 0x1F);
         let occurrence_count = chunk[3] & 0x7F;
         let severity = classify_severity(spn, &fmi);
@@ -134,7 +135,12 @@ pub fn decode_dm_message(frame: &CanFrame, sa: u8) -> Result<DmMessage, DtcError
         });
     }
 
-    Ok(DmMessage { mil_active, red_stop_lamp, amber_warning_lamp, dtcs })
+    Ok(DmMessage {
+        mil_active,
+        red_stop_lamp,
+        amber_warning_lamp,
+        dtcs,
+    })
 }
 
 #[cfg(test)]
@@ -151,6 +157,9 @@ mod tests {
     #[test]
     fn fmi_description_known() {
         let fmi = Fmi(3);
-        assert_eq!(fmi.description(), "Voltage above normal or shorted to high source");
+        assert_eq!(
+            fmi.description(),
+            "Voltage above normal or shorted to high source"
+        );
     }
 }

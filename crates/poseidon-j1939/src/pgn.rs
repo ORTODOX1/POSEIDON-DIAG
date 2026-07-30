@@ -1,4 +1,4 @@
-//! PGN registry for J1939-76 Marine parameter groups.
+//! PGN registry for SAE J1939 parameter groups used in marine diagnostics.
 //!
 //! Provides a lookup table of well-known Parameter Group Numbers used in
 //! marine diesel engine diagnostics. Each entry carries the PGN number,
@@ -25,18 +25,78 @@ pub struct PgnInfo {
 /// dispatching.
 pub fn default_registry() -> HashMap<u32, PgnInfo> {
     let entries: Vec<PgnInfo> = vec![
-        PgnInfo { pgn: 61444, name: "Electronic Engine Controller 1",          data_length: 8, transmission_rate_ms: 10  },
-        PgnInfo { pgn: 65262, name: "Engine Temperature 1",                    data_length: 8, transmission_rate_ms: 1000 },
-        PgnInfo { pgn: 65263, name: "Engine Fluid Level/Pressure",             data_length: 8, transmission_rate_ms: 500  },
-        PgnInfo { pgn: 65226, name: "DM1 — Active Diagnostic Trouble Codes",   data_length: 8, transmission_rate_ms: 1000 },
-        PgnInfo { pgn: 65227, name: "DM2 — Previously Active DTCs",            data_length: 8, transmission_rate_ms: 0    },
-        PgnInfo { pgn: 65270, name: "Inlet/Exhaust Conditions 1",              data_length: 8, transmission_rate_ms: 500  },
-        PgnInfo { pgn: 65271, name: "Vehicle Electrical Power 1",              data_length: 8, transmission_rate_ms: 1000 },
-        PgnInfo { pgn: 65253, name: "Engine Hours / Revolutions",              data_length: 8, transmission_rate_ms: 1000 },
-        PgnInfo { pgn: 65276, name: "Dash Display",                            data_length: 8, transmission_rate_ms: 1000 },
-        PgnInfo { pgn: 65030, name: "Marine Control Information",              data_length: 8, transmission_rate_ms: 100  },
-        PgnInfo { pgn: 65028, name: "Marine Propulsion Drive Status",          data_length: 8, transmission_rate_ms: 100  },
-        PgnInfo { pgn: 65031, name: "Marine Generator Set Status",             data_length: 8, transmission_rate_ms: 500  },
+        PgnInfo {
+            pgn: 61444,
+            name: "Electronic Engine Controller 1",
+            data_length: 8,
+            transmission_rate_ms: 10,
+        },
+        PgnInfo {
+            pgn: 65262,
+            name: "Engine Temperature 1",
+            data_length: 8,
+            transmission_rate_ms: 1000,
+        },
+        PgnInfo {
+            pgn: 65263,
+            name: "Engine Fluid Level/Pressure",
+            data_length: 8,
+            transmission_rate_ms: 500,
+        },
+        PgnInfo {
+            pgn: 65226,
+            name: "DM1 — Active Diagnostic Trouble Codes",
+            data_length: 8,
+            transmission_rate_ms: 1000,
+        },
+        PgnInfo {
+            pgn: 65227,
+            name: "DM2 — Previously Active DTCs",
+            data_length: 8,
+            transmission_rate_ms: 0,
+        },
+        PgnInfo {
+            pgn: 65270,
+            name: "Inlet/Exhaust Conditions 1",
+            data_length: 8,
+            transmission_rate_ms: 500,
+        },
+        PgnInfo {
+            pgn: 65271,
+            name: "Vehicle Electrical Power 1",
+            data_length: 8,
+            transmission_rate_ms: 1000,
+        },
+        PgnInfo {
+            pgn: 65253,
+            name: "Engine Hours / Revolutions",
+            data_length: 8,
+            transmission_rate_ms: 1000,
+        },
+        PgnInfo {
+            pgn: 65276,
+            name: "Dash Display",
+            data_length: 8,
+            transmission_rate_ms: 1000,
+        },
+        PgnInfo {
+            pgn: 65030,
+            name: "Marine Control Information",
+            data_length: 8,
+            transmission_rate_ms: 100,
+        },
+        PgnInfo {
+            pgn: 65028,
+            name: "Marine Propulsion Drive Status",
+            data_length: 8,
+            transmission_rate_ms: 100,
+        },
+        PgnInfo {
+            pgn: 65031,
+            name: "Marine Generator Set Status",
+            data_length: 8,
+            transmission_rate_ms: 500,
+        },
     ];
 
     entries.into_iter().map(|info| (info.pgn, info)).collect()
@@ -57,7 +117,13 @@ mod tests {
     #[test]
     fn registry_contains_marine_pgns() {
         let reg = default_registry();
-        assert!(reg.contains_key(&65030), "Marine Control Information missing");
-        assert!(reg.contains_key(&65028), "Marine Propulsion Drive Status missing");
+        assert!(
+            reg.contains_key(&65030),
+            "Marine Control Information missing"
+        );
+        assert!(
+            reg.contains_key(&65028),
+            "Marine Propulsion Drive Status missing"
+        );
     }
 }

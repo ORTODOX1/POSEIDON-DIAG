@@ -1,7 +1,8 @@
 //! POSEIDON-DIAG — Marine Engine Diagnostic Platform
 //!
-//! Tauri desktop application for real-time monitoring and fault diagnosis
-//! of marine propulsion systems over J1939 and NMEA 2000 CAN networks.
+//! Skeleton binary for real-time monitoring of marine propulsion systems
+//! over J1939 and NMEA 2000 CAN networks. It starts the monitor and logs
+//! parameter events; CAN ingestion is not wired up yet.
 
 use poseidon_monitor::{Monitor, ParameterReading};
 use tracing::{info, warn};
@@ -40,9 +41,9 @@ async fn main() {
         }
     });
 
-    // TODO: Initialize CAN driver, start frame ingestion loop, launch
-    //       Tauri webview for the bridge UI. For now emit a placeholder
-    //       reading so the subscriber task has something to process.
+    // TODO: Initialize the CAN driver and start the frame ingestion loop.
+    //       For now emit a placeholder reading so the subscriber task has
+    //       something to process.
     let reading = ParameterReading {
         key: "port.rpm".into(),
         value: 0.0,

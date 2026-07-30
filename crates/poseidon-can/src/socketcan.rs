@@ -53,7 +53,9 @@ impl CanDriver for SocketCanDriver {
 
     fn send(&self, frame: &CanFrame) -> Result<(), CanError> {
         if self.fd < 0 {
-            return Err(CanError::InterfaceNotFound { iface: self.iface.clone() });
+            return Err(CanError::InterfaceNotFound {
+                iface: self.iface.clone(),
+            });
         }
         tracing::debug!(id = frame.id, len = frame.data.len(), "TX frame (stubbed)");
         Ok(())
@@ -61,7 +63,9 @@ impl CanDriver for SocketCanDriver {
 
     fn recv(&self, _timeout: Duration) -> Result<Option<CanFrame>, CanError> {
         if self.fd < 0 {
-            return Err(CanError::InterfaceNotFound { iface: self.iface.clone() });
+            return Err(CanError::InterfaceNotFound {
+                iface: self.iface.clone(),
+            });
         }
         // In a real implementation this would poll/read from the socket.
         Ok(None)

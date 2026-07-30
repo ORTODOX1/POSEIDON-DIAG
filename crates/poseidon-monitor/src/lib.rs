@@ -58,7 +58,9 @@ pub struct EngineSnapshot {
 impl EngineSnapshot {
     /// Create an empty snapshot store.
     pub fn new() -> Self {
-        Self { values: Arc::new(RwLock::new(HashMap::new())) }
+        Self {
+            values: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 
     /// Insert or update a parameter reading.
@@ -96,7 +98,10 @@ impl Monitor {
     /// Create a monitor with the specified subscriber channel capacity.
     pub fn new(channel_capacity: usize) -> Self {
         let (tx, _) = broadcast::channel(channel_capacity);
-        Self { snapshot: EngineSnapshot::new(), tx }
+        Self {
+            snapshot: EngineSnapshot::new(),
+            tx,
+        }
     }
 
     /// Get a reference to the live snapshot for read access.

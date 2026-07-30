@@ -1,8 +1,10 @@
-//! J1939-76 Marine protocol implementation.
+//! SAE J1939 decoders for marine engine parameters.
 //!
-//! Decodes Parameter Group Numbers (PGNs) and extracts Suspect Parameter
-//! Numbers (SPNs) from CAN frames originating on marine propulsion and
-//! auxiliary engine networks.
+//! Decodes Parameter Group Numbers (PGNs) from CAN frames originating on
+//! marine propulsion and auxiliary engine networks. The decoders implemented
+//! here cover J1939-71 (Vehicle Application Layer) parameter groups; the
+//! registry in [`pgn_registry`] additionally lists marine-specific groups for
+//! which no decoder exists yet.
 
 use poseidon_can::CanFrame;
 use thiserror::Error;
@@ -82,14 +84,22 @@ pub struct EngineFluid {
 ///   Byte 4-5 (data[3-4]): Engine Speed (0.125 RPM/bit, 0 offset)
 pub fn decode_engine_controller(frame: &CanFrame, sa: u8) -> Result<EngineController, J1939Error> {
     if frame.data.len() < 8 {
-        return Err(J1939Error::FrameTooShort { expected: 8, actual: frame.data.len() });
+        return Err(J1939Error::FrameTooShort {
+            expected: 8,
+            actual: frame.data.len(),
+        });
     }
     let rpm_raw = u16::from_le_bytes([frame.data[3], frame.data[4]]);
     let engine_rpm = rpm_raw as f64 * 0.125;
     let actual_torque_pct = frame.data[2] as f64 - 125.0;
     let demand_torque_pct = frame.data[1] as f64 - 125.0;
 
-    Ok(EngineController { source_address: sa, engine_rpm, actual_torque_pct, demand_torque_pct })
+    Ok(EngineController {
+        source_address: sa,
+        engine_rpm,
+        actual_torque_pct,
+        demand_torque_pct,
+    })
 }
 
 /// Decode PGN 65262 — Engine Temperature 1 (ET1).
@@ -98,27 +108,55 @@ pub fn decode_engine_controller(frame: &CanFrame, sa: u8) -> Result<EngineContro
 ///   Byte 1   (data[0]): Engine Coolant Temperature (1°C/bit, -40°C offset)
 ///   Byte 2   (data[1]): Fuel Temperature (1°C/bit, -40°C offset)
 ///   Byte 3-4 (data[2-3]): Engine Oil Temperature (0.03125°C/bit, -273°C offset)
-pub fn decode_engine_temperature(frame: &CanFrame, sa: u8) -> Result<EngineTemperature, J1939Error> {
+pub fn decode_engine_temperature(
+    frame: &CanFrame,
+    sa: u8,
+) -> Result<EngineTemperature, J1939Error> {
     if frame.data.len() < 8 {
-        return Err(J1939Error::FrameTooShort { expected: 8, actual: frame.data.len() });
+        return Err(J1939Error::FrameTooShort {
+            expected: 8,
+            actual: frame.data.len(),
+        });
     }
     let coolant_temp_c = frame.data[0] as f64 - 40.0;
     let fuel_temp_c = frame.data[1] as f64 - 40.0;
     let oil_temp_c = u16::from_le_bytes([frame.data[2], frame.data[3]]) as f64 * 0.03125 - 273.0;
 
-    Ok(EngineTemperature { source_address: sa, coolant_temp_c, fuel_temp_c, oil_temp_c })
+    Ok(EngineTemperature {
+        source_address: sa,
+        coolant_temp_c,
+        fuel_temp_c,
+        oil_temp_c,
+    })
 }
 
-/// Decode PGN 65263 — Engine Fluid Level/Pressure.
+/// Decode PGN 65263 — Engine Fluid Level/Pressure 1 (EFL/P1).
+///
+/// Byte layout per SAE J1939-71:
+///   Byte 1   (data[0]): Fuel Delivery Pressure (4 kPa/bit, 0 offset)
+///   Byte 2   (data[1]): Extended Crankcase Blow-by Pressure (0.05 kPa/bit)
+///   Byte 3   (data[2]): Engine Oil Level (0.4 %/bit)
+///   Byte 4   (data[3]): Engine Oil Pressure (4 kPa/bit, 0 offset)
+///   Byte 5-6 (data[4-5]): Crankcase Pressure (1/128 kPa/bit, -250 kPa offset)
+///   Byte 7   (data[6]): Coolant Pressure (2 kPa/bit, 0 offset)
+///   Byte 8   (data[7]): Coolant Level (0.4 %/bit)
 pub fn decode_engine_fluid(frame: &CanFrame, sa: u8) -> Result<EngineFluid, J1939Error> {
     if frame.data.len() < 8 {
-        return Err(J1939Error::FrameTooShort { expected: 8, actual: frame.data.len() });
+        return Err(J1939Error::FrameTooShort {
+            expected: 8,
+            actual: frame.data.len(),
+        });
     }
+    let fuel_pressure_kpa = frame.data[0] as f64 * 4.0;
     let oil_pressure_kpa = frame.data[3] as f64 * 4.0;
-    let coolant_pressure_kpa = frame.data[4] as f64 * 2.0;
-    let fuel_pressure_kpa = frame.data[5] as f64 * 4.0;
+    let coolant_pressure_kpa = frame.data[6] as f64 * 2.0;
 
-    Ok(EngineFluid { source_address: sa, oil_pressure_kpa, coolant_pressure_kpa, fuel_pressure_kpa })
+    Ok(EngineFluid {
+        source_address: sa,
+        oil_pressure_kpa,
+        coolant_pressure_kpa,
+        fuel_pressure_kpa,
+    })
 }
 
 #[cfg(test)]
@@ -135,5 +173,42 @@ mod tests {
         };
         let ec = decode_engine_controller(&frame, 0x00).unwrap();
         assert!((ec.engine_rpm - 1500.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn decode_fluid_pressure_byte_layout() {
+        // EFL/P1 with distinct raw values in bytes 1, 4 and 7 so a byte
+        // offset mistake cannot go unnoticed. Bytes 2, 3, 5, 6 and 8 are
+        // "not available" (0xFF).
+        let frame = CanFrame {
+            id: 0x18FE_EF00,
+            data: vec![0x64, 0xFF, 0xFF, 0x5A, 0xFF, 0xFF, 0x4B, 0xFF],
+            is_extended: true,
+            timestamp_us: 0,
+        };
+        let ef = decode_engine_fluid(&frame, 0x00).unwrap();
+        // Byte 1: 100 * 4 kPa/bit
+        assert!((ef.fuel_pressure_kpa - 400.0).abs() < f64::EPSILON);
+        // Byte 4: 90 * 4 kPa/bit
+        assert!((ef.oil_pressure_kpa - 360.0).abs() < f64::EPSILON);
+        // Byte 7: 75 * 2 kPa/bit
+        assert!((ef.coolant_pressure_kpa - 150.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn decode_fluid_rejects_short_frame() {
+        let frame = CanFrame {
+            id: 0x18FE_EF00,
+            data: vec![0x64, 0xFF, 0xFF],
+            is_extended: true,
+            timestamp_us: 0,
+        };
+        assert!(matches!(
+            decode_engine_fluid(&frame, 0x00),
+            Err(J1939Error::FrameTooShort {
+                expected: 8,
+                actual: 3
+            })
+        ));
     }
 }

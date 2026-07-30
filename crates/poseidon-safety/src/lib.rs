@@ -15,7 +15,12 @@ pub enum SafetyError {
     #[error("write rejected: operator has not confirmed stage {stage}")]
     ConfirmationMissing { stage: u8 },
     #[error("parameter 0x{address:04X} value {value} outside OEM bounds [{min}, {max}]")]
-    OutOfBounds { address: u16, value: f64, min: f64, max: f64 },
+    OutOfBounds {
+        address: u16,
+        value: f64,
+        min: f64,
+        max: f64,
+    },
     #[error("dead-man switch expired: no acknowledgement for {elapsed:?}")]
     DeadManExpired { elapsed: Duration },
     #[error("write operations are globally locked")]
@@ -115,7 +120,9 @@ pub struct AuditLog {
 impl AuditLog {
     /// Create an empty audit log.
     pub fn new() -> Self {
-        Self { entries: Vec::new() }
+        Self {
+            entries: Vec::new(),
+        }
     }
 
     /// Record a parameter modification. Entries cannot be removed.
@@ -152,7 +159,9 @@ pub struct ParameterBounds {
 impl ParameterBounds {
     /// Create an empty bounds registry.
     pub fn new() -> Self {
-        Self { limits: HashMap::new() }
+        Self {
+            limits: HashMap::new(),
+        }
     }
 
     /// Register bounds for a parameter address.

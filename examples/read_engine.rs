@@ -11,16 +11,14 @@
 
 use std::time::Duration;
 
-use poseidon_can::{parse_extended_id, CanDriver};
 use poseidon_can::socketcan::SocketCanDriver;
+use poseidon_can::{parse_extended_id, CanDriver};
 use poseidon_j1939::{decode_engine_controller, decode_engine_temperature, pgn};
 use poseidon_monitor::{Monitor, ParameterReading};
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_target(false)
-        .init();
+    tracing_subscriber::fmt().with_target(false).init();
 
     // --- 1. Open the CAN interface ------------------------------------------
     let mut driver = SocketCanDriver::new();
